@@ -71,7 +71,7 @@ interface
 uses System.SysUtils, System.Classes, System.Rtti, System.TypInfo,
     System.IOUtils, System.StrUtils, System.Types, System.Generics.Defaults, System.Generics.Collections;
 
-const WPXOrderVersion = 'WPXOrder 0.9.0';
+const WPXOrderVersion = 'WPXOrder 1.0.0';
       WPXOrderXFacturNSHeader =
       '<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" ' +
       'xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" ' +

@@ -238,6 +238,7 @@ implementation
 resourcestring
   sNOXML = 'XMLSupport not linked';
   sXMLHeader = '<?xml version=' + #39 + '1.0' + #39 + ' encoding=' + #39 + 'UTF-8' + #39 + ' ?>';
+  sXMLComment = '<!-- WPXOrder https://www.wpcubed.com/pdf/products/xorder/ -->';
 
 { TSupplyChainTradeTransaction }
 
@@ -603,7 +604,6 @@ begin
   Result := nil;
 end;
 
-
 procedure TWPXOrderBase.SaveToFile(Filename: String);
 var str : TStringList;
     UTF8withoutBOM: TEncoding;
@@ -612,6 +612,7 @@ begin
   UTF8withoutBOM := TUTF8EncodingNoBOM.Create;
   try
      str.Add(sXMLHeader);
+     if sXMLComment<>'' then str.Add(sXMLComment);
      WriteToStrings(TWPXOrderDumpMode.XML, str);
      str.SaveToFile(Filename, UTF8withoutBOM); // TEncoding.UTF8
   finally
@@ -628,6 +629,7 @@ begin
   UTF8withoutBOM := TUTF8EncodingNoBOM.Create;
   try
      str.Add(sXMLHeader);
+     if sXMLComment<>'' then str.Add(sXMLComment);
      WriteToStrings(TWPXOrderDumpMode.XML,  str);
      str.SaveToStream(Stream, UTF8withoutBOM); // TEncoding.UTF8
   finally
