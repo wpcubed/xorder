@@ -21,15 +21,11 @@ object InvoiceForm: TInvoiceForm
     Top = 0
     Width = 666
     Height = 355
-    ActivePage = tabXML
+    ActivePage = tabAddr
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 782
-    ExplicitHeight = 557
     object tabAddr: TTabSheet
       Caption = 'Adressen'
-      ExplicitLeft = 8
-      ExplicitTop = 28
       object Label1: TLabel
         Left = 8
         Top = 16
@@ -70,6 +66,21 @@ object InvoiceForm: TInvoiceForm
         ColWidths = (
           150
           157)
+        RowHeights = (
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18)
       end
       object valBuyer: TValueListEditor
         Left = 328
@@ -97,13 +108,26 @@ object InvoiceForm: TInvoiceForm
         ColWidths = (
           150
           157)
+        RowHeights = (
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18
+          18)
       end
     end
     object tabOrder: TTabSheet
       Caption = 'Bestellung'
       ImageIndex = 1
-      ExplicitLeft = 8
-      ExplicitTop = 28
       DesignSize = (
         658
         327)
@@ -162,6 +186,12 @@ object InvoiceForm: TInvoiceForm
           64
           64
           64)
+        RowHeights = (
+          24
+          24
+          24
+          24
+          24)
       end
       object edREName: TEdit
         Left = 284
@@ -183,10 +213,6 @@ object InvoiceForm: TInvoiceForm
     object tabXML: TTabSheet
       Caption = 'Ausgabe'
       ImageIndex = 2
-      ExplicitLeft = 8
-      ExplicitTop = 28
-      ExplicitWidth = 774
-      ExplicitHeight = 529
       object outText: TMemo
         Left = 0
         Top = 35
@@ -196,7 +222,6 @@ object InvoiceForm: TInvoiceForm
         Lines.Strings = (
           'outText')
         TabOrder = 0
-        ExplicitTop = 37
       end
       object Panel1: TPanel
         Left = 0
@@ -205,7 +230,6 @@ object InvoiceForm: TInvoiceForm
         Height = 35
         Align = alTop
         TabOrder = 1
-        ExplicitTop = -6
         object btnCalculate: TButton
           AlignWithMargins = True
           Left = 171
@@ -216,7 +240,6 @@ object InvoiceForm: TInvoiceForm
           Caption = 'Kontrollrechnung'
           TabOrder = 0
           OnClick = btnCalculateClick
-          ExplicitTop = 2
         end
         object btnGenerateInvoice: TButton
           AlignWithMargins = True
@@ -228,7 +251,6 @@ object InvoiceForm: TInvoiceForm
           Caption = 'Erstelle XML'
           TabOrder = 1
           OnClick = btnGenerateInvoiceClick
-          ExplicitTop = 2
         end
       end
     end
@@ -246,6 +268,10 @@ object InvoiceForm: TInvoiceForm
         Caption = 'Save XML'
         OnClick = SaveXML1Click
       end
+      object SaveasDelphiCode1: TMenuItem
+        Caption = 'Save as Delphi Code'
+        OnClick = SaveasDelphiCode1Click
+      end
     end
   end
   object OpenDialog1: TOpenDialog
@@ -254,7 +280,7 @@ object InvoiceForm: TInvoiceForm
     Top = 56
   end
   object SaveDialog1: TSaveDialog
-    Filter = 'X-Factur XML (*.XML)|*.XML'
+    Filter = 'X-Factur XML (*.XML)|*.XML|Textfiles|*.TXT'
     Left = 260
     Top = 120
   end

@@ -209,7 +209,7 @@ type
      procedure LoadFromStream(Stream : TStream);
      procedure LoadFromFile(Filename : String);
      procedure SaveToStream(Stream : TStream);
-     procedure SaveToFile(Filename : String);
+     procedure SaveToFile(Filename : String; Mode : TWPXOrderDumpMode = TWPXOrderDumpMode.XML);
      // procedure WriteXML;
      // Clears data and fills from loaded XML.
      {$IFDEF ALLOWXMLREADING}
@@ -604,7 +604,7 @@ begin
   Result := nil;
 end;
 
-procedure TWPXOrderBase.SaveToFile(Filename: String);
+procedure TWPXOrderBase.SaveToFile(Filename: String; Mode : TWPXOrderDumpMode = TWPXOrderDumpMode.XML);
 var str : TStringList;
     UTF8withoutBOM: TEncoding;
 begin
@@ -613,7 +613,7 @@ begin
   try
      str.Add(sXMLHeader);
      if sXMLComment<>'' then str.Add(sXMLComment);
-     WriteToStrings(TWPXOrderDumpMode.XML, str);
+     WriteToStrings(Mode, str);
      str.SaveToFile(Filename, UTF8withoutBOM); // TEncoding.UTF8
   finally
      str.Free;
@@ -1098,7 +1098,7 @@ begin
    str.BeginUpdate;
    try
       aName := Name;
-      if aName='' then aName := 'WPXOrder1';
+      if aName='' then aName := 'WPXFactur1';
 
 
       if Mode = TWPXOrderDumpMode.Debug then

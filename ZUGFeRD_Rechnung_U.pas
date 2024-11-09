@@ -42,12 +42,14 @@ type
     edREID: TEdit;
     SaveXML1: TMenuItem;
     SaveDialog1: TSaveDialog;
+    SaveasDelphiCode1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure LoadXML1Click(Sender: TObject);
     procedure btnGenerateInvoiceClick(Sender: TObject);
     procedure SaveXML1Click(Sender: TObject);
     procedure btnCalculateClick(Sender: TObject);
+    procedure SaveasDelphiCode1Click(Sender: TObject);
   private
     procedure ReadItems;
   public
@@ -114,8 +116,16 @@ begin
   str.Values['SpecifiedLegalOrganization'] := SpecifiedLegalOrganization;
 end;
 
+procedure TInvoiceForm.SaveasDelphiCode1Click(Sender: TObject);
+begin
+  SaveDialog1.FilterIndex := 1;
+  if SaveDialog1.Execute then
+     WPXFactur1.SaveToFile(SaveDialog1.FileName, TWPXOrderDumpMode.DelphiCodeCompact);
+end;
+
 procedure TInvoiceForm.SaveXML1Click(Sender: TObject);
 begin
+  SaveDialog1.FilterIndex := 0;
   if SaveDialog1.Execute then
      WPXFactur1.SaveToFile(SaveDialog1.FileName);
 end;
@@ -145,6 +155,7 @@ begin
         );
 
    for I := 1 to ItemGrid.RowCount-1 do
+   if ItemGrid.Cells[1,i]<>'' then
    begin
       WPXFactur1.AddSale(
          ItemGrid.Cells[1,i],
@@ -168,6 +179,8 @@ begin
   WPXShipTo := TInvoiceCompanyData.Create;
   WPXPaymentData := TPaymentData.Create;
   WPXOrderData := TOrderData.Create;
+
+  ReadItems;
 end;
 
 procedure TInvoiceForm.FormDestroy(Sender: TObject);
@@ -200,7 +213,8 @@ procedure TInvoiceForm.ReadItems;
 var i : Integer;
     item : TSupplyChainTradeItem;
 begin
-    ItemGrid.RowCount := WPXFactur1.Transaction.Items.Count;
+    ItemGrid.RowCount := 0;
+    ItemGrid.RowCount := WPXFactur1.Transaction.Items.Count + 4;
     ItemGrid.ColCount := 7;
 
     ItemGrid.Cells[0,0] := 'LineID';
