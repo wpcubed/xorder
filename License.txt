@@ -4,6 +4,12 @@
   Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
+Please note that we cannot guarantee the correctness for the created Format 
+or the calculation since also we have to depend on Information which 
+is given to us without any guarantee for correctness and is also changed 
+quite often.
+
+
   The project WPXOrder with the X-Factur specification and is aimed at reading
   and creating XML invoice data in Delphi. It was developed utilizing
   modern compiler features like method overloading and generics. This enables
