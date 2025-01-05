@@ -1,5 +1,5 @@
 
-<h1>WPXOrder is a collection of Delphi units to create X-Factur (ZUGFeRD) XML data. It is a collection of Delphi classes which ressemble the format X-Factur.</h1>
+<h1>WPXOrder is a collection of Delphi units to create X-Factur (ZUGFeRD) XML data. It is a collection of Delphi classes that represent the elements defined by the X-Factor format.</h1>
 <p>It was created to load, process and save such data. It does <b>not include E-Invoice standard</b> and is focussed to create the XML data to be embedded inside PDF invoices. To create such Invoices you can use the powerful <a href="https://www.wpcubed.com/pdf/products/wpdf/">PDF creation VCL wPDF</a>. To read such Invoices you can use <a href="https://www.wpcubed.com/pdf/products/pdf-edit/">WPViewPDF PLUS</a> which can not only extract X-Factur Data but also attach it.</p>
 <p></p>
 <p>We developed WPXOrder to offer a tool that leverages the capabilities of the modern Delphi compiler, simplifying the management of the complex format using a deeply thought out <a href="https://www.wpcubed.com/products/xorder/architecture/">software architecture</a>.</p>
