@@ -3091,7 +3091,7 @@ begin
   begin
     AName := 'schemeID';
     if fschemeID=TTaxID.FC_tax_number then
-      AValue := 'FA' else AValue := 'VA';
+      AValue := 'FC' else AValue := 'VA';
     Result := true;
   end
   else
