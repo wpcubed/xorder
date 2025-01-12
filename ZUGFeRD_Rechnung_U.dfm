@@ -52,6 +52,9 @@ object InvoiceForm: TInvoiceForm
           'CityName='
           'CountryID='
           'DepartmentName='
+          'email='
+          'Telephone='
+          'Fax='
           'TAXId='
           'VATID='
           'ContactInfo='
@@ -65,8 +68,11 @@ object InvoiceForm: TInvoiceForm
           'Value')
         ColWidths = (
           150
-          157)
+          140)
         RowHeights = (
+          18
+          18
+          18
           18
           18
           18
@@ -94,6 +100,9 @@ object InvoiceForm: TInvoiceForm
           'CityName='
           'CountryID='
           'DepartmentName='
+          'email='
+          'Telephone='
+          'Fax='
           'TAXId='
           'VATID='
           'ContactInfo='
@@ -107,8 +116,11 @@ object InvoiceForm: TInvoiceForm
           'Value')
         ColWidths = (
           150
-          157)
+          140)
         RowHeights = (
+          18
+          18
+          18
           18
           18
           18

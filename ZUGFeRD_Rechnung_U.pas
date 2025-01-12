@@ -79,6 +79,9 @@ begin
   CountryIDText := str.Values['CountryID'];
   // Optional
   DepartmentName := str.Values['DepartmentName'];
+  email := str.Values['email'];
+  telephone := str.Values['Telephone'];
+  fax := str.Values['Fax'];
   // Required for Seller
   TAXId := str.Values['TAXId'];
   // Required for EU Sales
@@ -102,6 +105,9 @@ begin
   str.Values['CountryID'] := CountryIDText;
   // Optional
   str.Values['DepartmentName'] := DepartmentName;
+  str.Values['email'] := email;
+  str.Values['Telephone'] := telephone;
+  str.Values['Fax'] := fax;
   // Required for Seller
   str.Values['TAXId'] := TAXId;
   // Required for EU Sales

@@ -4,7 +4,7 @@ unit WPXFacturEN16931;
   https://www.wpcubed.com/xorder
   ---------------------------------
 
-  Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2025 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   To embed XML into PDF files we recommend to use the product WPViewPDF Plus.

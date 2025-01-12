@@ -4,7 +4,7 @@
   https://www.wpcubed.com/xorder
   ---------------------------------
 
-Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2025 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   To embed XML into PDF files we recommend to use the product WPViewPDF Plus.
@@ -61,6 +61,7 @@ Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
 // Enable loading of XML Data
 {$DEFINE ALLOWXMLREADING} // if disabled the XML Interface is not needed
 
+{-$DEFINE SKIP_EMPTY_ELEMENTS} // if enabled, empty elements will not be read
 
 interface
 
@@ -107,13 +108,6 @@ type
     property Items[Index: Integer]: TSupplyChainTradeItem read GetItem write SetItem; default;
   end;
 
-  TWPXOrderDumpMode = (
-     Debug,
-     XML,
-     DelphiCode,
-     DelphiCodeCompact
-      );
-
   TWPXOrderCalcMode = (
         // deactivate the Handling of SpecifiedLogisticsServiceCharge
         SpecifiedLogisticsNettoMode,
@@ -122,24 +116,7 @@ type
   );
   TWPXOrderCalcModes = set of TWPXOrderCalcMode;
 
-  TWPXDumpXElementOption = (
-    CompactCode
-  );
-  TDumpXElementOptions = set of TWPXDumpXElementOption;
 
-
-  TSumRec = record
-     netValue   : Double;
-     grossValue : Double;
-     VATRate    : Double;
-     VATvalue   : Double;
-     VATCategory : TTaxCategory;
-  end;
-  TSumRecList = class(TList<TSumRec>)
-  public
-     procedure AddToList( aVATCategory : TTaxCategory;
-                     aVATRate, aNetValue, aVATvalue, aGrossValue : Double );
-  end;
   // Written as SupplyChainTradeTransaction
 
   TSupplyChainTradeTransaction = class(TComponent)
@@ -234,15 +211,7 @@ type
 
 implementation
 
-
-resourcestring
-  sNOXML = 'XMLSupport not linked';
-  sXMLHeader = '<?xml version=' + #39 + '1.0' + #39 + ' encoding=' + #39 + 'UTF-8' + #39 + ' ?>';
-  sXMLComment = '<!-- WPXOrder https://www.wpcubed.com/pdf/products/xorder/ -->';
-
 { TSupplyChainTradeTransaction }
-
-
 
 procedure TSupplyChainTradeTransaction.Assign(Source: TPersistent);
 begin
@@ -698,31 +667,43 @@ begin
      else
      begin
         Result := true;
-        subele := ele.GetElementFor(j);
-        if subele<>nil then
+        // 12.1.2025 - if a date, text or number is empty,
+        // ignore it without exception and do not create an entry!
+
+        {$IFDEF SKIP_EMPTY_ELEMENTS}
+        if (Node.ChildNodes.Count=0) and (Node.Text='') then
         begin
-           if not subele.WasCreatedNew then
-             subele := subele.ListAdd;
-           subele.WasCreatedNew := false;
+           FDefaults.Log('Empty Element: ' + Node.XML );
+        end
+        else
+        {$ENDIF}
+        begin
+            subele := ele.GetElementFor(j);
+            if subele<>nil then
+            begin
+               if not subele.WasCreatedNew then
+                 subele := subele.ListAdd;
+               subele.WasCreatedNew := false;
 
-           if subele.XMLNameSpace<>ns then
-              FDefaults.Log('Correct Namespace: ' + n + '->' + WPXElementNSDefs[ns].nam + ' instead of '
-                 + WPXElementNSDefs[subele.XMLNameSpace].nam);
+               if subele.XMLNameSpace<>ns then
+                  FDefaults.Log('Correct Namespace: ' + n + '->' + WPXElementNSDefs[ns].nam + ' instead of '
+                     + WPXElementNSDefs[subele.XMLNameSpace].nam);
 
-           if subele.ElementId('')=-2 then
-           begin
-               subele.ValueStr := Node.Text;
-               ReadAttributes(Node, subele);
-           end else
-           if Node.ChildNodes.Count>0 then
-           begin
-              ReadElement( Node, subele );
-           end
-           else
-           begin
-              subele.ValueStr := Node.Text;
-              ReadAttributes( Node, subele );
-           end;
+               if subele.ElementId('')=-2 then
+               begin
+                   subele.ValueStr := Node.Text;
+                   ReadAttributes(Node, subele);
+               end else
+               if Node.ChildNodes.Count>0 then
+               begin
+                  ReadElement( Node, subele );
+               end
+               else
+               begin
+                  subele.ValueStr := Node.Text;
+                  ReadAttributes( Node, subele );
+               end;
+            end;
         end;
      end;
   end;
@@ -984,8 +965,6 @@ begin
              SubDump(d.Child(I));
           end;
 
-
-
          if Mode in [TWPXOrderDumpMode.XML,TWPXOrderDumpMode.Debug] then
             str.Add( levels + '</' + dTagName + '>' )
          else if (Mode in [TWPXOrderDumpMode.DelphiCodeCompact]) and
@@ -1010,6 +989,7 @@ begin
         fAsMemoryStream.Clear
   else fAsMemoryStream := TMemoryStream.Create;
   SaveToStream(fAsMemoryStream);
+  fAsMemoryStream.Position := 0;
   Result := fAsMemoryStream;
 end;
 
@@ -1146,33 +1126,6 @@ end;
 
 
 
-{ TSumRecList }
 
-procedure TSumRecList.AddToList( aVATCategory : TTaxCategory;
-                     aVATRate, aNetValue, aVATvalue, aGrossValue : Double );
-    var r : TSumRec;
-        j : Integer;
-    begin
-          for j := 0 to Count-1 do
-          begin
-            if SameValue(list[j].VATRate,aVATRate) and
-               (list[j].VATCategory=aVATCategory)
-            then
-            begin
-               r := list[j];
-               r.netValue := r.netValue + aNetValue;
-               r.grossValue := r.grossValue + aGrossValue;
-               r.VATvalue := r.VATvalue + aVATvalue;
-               list[j] := r;
-               exit;
-            end;
-          end;
-          r.netValue   := aNetValue;
-          r.grossValue := aGrossValue;
-          r.VATRate    := aVATRate;
-          r.VATvalue   := aVATvalue;
-          r.VATCategory := aVATCategory;
-          Add(r);
-    end;
 
 end.

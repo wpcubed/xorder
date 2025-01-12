@@ -4,7 +4,7 @@ unit WPXFacturTypes;
   https://www.wpcubed.com/xorder
   ---------------------------------
 
-  Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2025 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   To embed XML into PDF files we recommend to use the product WPViewPDF Plus.
@@ -53,7 +53,7 @@ unit WPXFacturTypes;
   refer to the offical information.
   Tip: You can download an spreadsheet with the possible values for the "codes".
   Note the possibility to load example files and create Delphi code automatically.
-  This will help you to getyou  started.
+  This will help you to get you  started.
 }
 
 
@@ -68,10 +68,10 @@ unit WPXFacturTypes;
 
 interface
 
-uses System.SysUtils, System.Classes, System.Rtti, System.TypInfo,
+uses System.SysUtils, System.Classes, System.Rtti, System.TypInfo, System.Math,
     System.IOUtils, System.StrUtils, System.Types, System.Generics.Defaults, System.Generics.Collections;
 
-const WPXOrderVersion = 'WPXOrder 1.0.0';
+const WPXOrderVersion = 'WPXOrder 1.0.1';
       WPXOrderXFacturNSHeader =
       '<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" ' +
       'xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" ' +
@@ -87,7 +87,7 @@ type
     qdt, //   xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
     xs,  //   xmlns:xs="http://www.w3.org/2001/XMLSchema"
     udt,  //   xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
-    // The following are used by X-Invoice
+    // The following are used by X-Invoice (reserved)
     cac, // xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
     cec, // xmlns:cec="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
     cbc, // xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
@@ -95,7 +95,24 @@ type
     none
    );
    TWPXElementNSSelection = set of TWPXElementNS;
-   TWPXOrderType = ( ZUGFeRD, XInvoice );
+   TWPXOrderType = (
+      ZUGFeRD,
+      // EInvoice is Reserved. Maybe it is impossible to add support for this
+      EInvoice
+
+       );
+
+   TWPXOrderDumpMode = (
+     Debug,
+     XML,
+     DelphiCode,
+     DelphiCodeCompact
+   );
+
+  TWPXDumpXElementOption = (
+    CompactCode
+  );
+  TDumpXElementOptions = set of TWPXDumpXElementOption;
 
    // used in GuidelineSpecifiedDocumentContextParameter
    TWPXOrderProfile = (  Basic, Extended  );
@@ -267,8 +284,7 @@ type
     function  ElementId( const aTagName : String ) : Integer;
     function  GetElementFor(iEnum: Integer): TWPXElement; virtual;
 
-
-    // this removes all properties and also delets all siblings[]
+    // this removes all properties and also deletes all siblings[]
     procedure Clear; override;
     procedure Delete(Index: Integer); override;
     function  Child(nr: Integer): TSeqData; virtual;
@@ -395,22 +411,26 @@ type
     function XMLTagName: String; override;
   end;
 
-    TCurrencyCode = (AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD,
-    AWG, AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV,
-    BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW, CLF,
-    CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF, DKK, DOP,
-    DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL, GHS, GIP, GMD,
-    GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF, IDR, ILS, INR, IQD,
-    IRR, ISK, JMD, JOD, JPY, KES, KGS, KHR, KMF, KPW, KRW, KWD,
-    KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD,
-    MMK, MNT, MOP, MRU, MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD,
-    NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN,
-    PYG, QAR, RON, RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD,
-    SHP, SLL, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT,
-    TND, TOP, TRY_, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU,
-    UYW, UZS, VES, VND, VUV, WST, XAF, XAG, XAU, XBA, XBB, XBC,
-    XBD, XCD, XDR, XOF, XPD, XPF, XPT, XSU, XTS, XUA, XXX, YER,
-    ZAR, ZMW, ZWL);
+  // ZUGFeRD 2.3.2 - 10.1.2025 (updated)
+  // We did not yet get the other codes from ZUGFeRD 2.3.2 since they
+  // seem to be much reduced
+  TCurrencyCode = (AED, AFN, ALL, AMD, ANG, AOA, ARS, AUD, AWG,
+    AZN, BAM, BBD, BDT, BGN, BHD, BIF, BMD, BND, BOB, BOV,
+    BRL, BSD, BTN, BWP, BYN, BZD, CAD, CDF, CHE, CHF, CHW,
+    CLF, CLP, CNY, COP, COU, CRC, CUC, CUP, CVE, CZK, DJF,
+    DKK, DOP, DZD, EGP, ERN, ETB, EUR, FJD, FKP, GBP, GEL,
+    GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HRK, HTG, HUF,
+    IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY, KES, KGS,
+    KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD,
+    LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU, MUR,
+    MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR,
+    NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON,
+    RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLL,
+    SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND,
+    TOP, eTRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU,
+    UYW, UZS, VES, VND, VUV, WST, XAF, XAG, XAU, XBA, XBB,
+    XBC, XBD, XCD, XDR, XOF, XPD, XPF, XPT, XSU, XTS, XUA,
+    XXX, YER, ZAR, ZMW, ZWL);
 
   TAmountType = class(TWPXSequenceStringsURN)
   protected
@@ -640,7 +660,8 @@ end;
   TPartyRoleCodeType = class(TTokenType);
   TLineStatusCodeType = class(TTokenType);
 
-  TAllowanceChargeReasonCodeContentType = (eAA, eAAA, eAAC, eAAD, eAAE, eAAF,
+  TAllowanceChargeReasonCodeContentType =
+  (eAA, eAAA, eAAC, eAAD, eAAE, eAAF,
     eAAH, eAAI, eAAS, eAAT, eAAV, eAAY, eAAZ, eABA, eABB, eABC, eABD, eABF,
     eABK, eABL, eABN, eABR, eABS, eABT, eABU, eACF, eACG, eACH, eACI, eACJ,
     eACK, eACL, eACM, eACS, eADC, eADE, eADJ, eADK, eADL, eADM, eADN, eADO,
@@ -656,7 +677,6 @@ end;
     eSAA, eSAD, eSAE, eSAI, eSG, eSH, eSM, eSU, eTAB, eTAC, eTT, eTV, eV1, eV2,
     eWH, eXAA, eYY, eZZZ, e41, e42, e60, e62, e63, e64, e65, e66, e67, e68, e70,
     e71, e88, e95, e100, e102, e103, e104, e105);
-
 
   { 41 - Bonus for works ahead of schedule
     42 - Other bonus
@@ -919,12 +939,13 @@ end;
   97 : Report ZZZ : agreed among trading partners on interim basis }
 
 
+  // 2.3.2
   TPaymentMeansCodeContentType = (e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11,
-    e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26,
-    e27, e28, e29, e30, e31, e32, e33, e34, e35, e36, e37, e38, e39, e40, e41,
-    e42, e43, e44, e45, e46, e47, e48, e49, e50, e51, e52, e53, e54, e55, e56,
-    e57, e58, e59, e60, e61, e62, e63, e64, e65, e66, e67, e68, e69, e70, e74,
-    e75, e76, e77, e78, e91, e92, e93, e94, e95, e96, e97, eZZZ);
+  e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26,
+  e27, e28, e29, e30, e31, e32, e33, e34, e35, e36, e37, e38, e39, e40, e41,
+  e42, e43, e44, e45, e46, e47, e48, e49, e50, e51, e52, e53, e54, e55, e56,
+  e57, e58, e59, e60, e61, e62, e63, e64, e65, e66, e67, e68, e69, e70, e74,
+  e75, e76, e77, e78, e91, e92, e93, e94, e95, e96, e97, eZZZ);
 
   TPaymentMeansCodeType = class(TWPXElementEnum)
   private
@@ -1169,6 +1190,20 @@ end;
   TDateTimeType = TFormattedDateTime;
   TDateType = TFormattedDateTime;
 
+
+  TSumRec = record
+     netValue   : Double;
+     grossValue : Double;
+     VATRate    : Double;
+     VATvalue   : Double;
+     VATCategory : TTaxCategory;
+  end;
+  TSumRecList = class(TList<TSumRec>)
+  public
+     procedure AddToList( aVATCategory : TTaxCategory;
+                     aVATRate, aNetValue, aVATvalue, aGrossValue : Double );
+  end;
+
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1202,6 +1237,12 @@ const
     'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW',
     'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI',
     'VN', 'VU', 'WF', 'WS', 'XI', 'YE', 'YT', 'ZA', 'ZM', 'ZW');
+
+
+resourcestring
+  sNOXML = 'XMLSupport has not been linked';
+  sXMLHeader = '<?xml version=' + #39 + '1.0' + #39 + ' encoding=' + #39 + 'UTF-8' + #39 + ' ?>';
+  sXMLComment = '<!-- WPXOrder https://www.wpcubed.com/pdf/products/xorder/ -->';
 
 implementation
 
@@ -2831,20 +2872,27 @@ function TDateTimeStringType.GetValueStr: String;
 var
   frm: TFormatSettings;
 begin
-  frm := TFormatSettings.Create;
-  frm.DateSeparator :=#0;
-  frm.ShortDateFormat := 'YYYYMMDD';
-  Result := DateToStr(FDateValue, frm);
+  // 12.1.2025 - that is undefined, rather write "" instead of default data
+  if SameValue(FDateValue,0) then Result := '' else
+  begin
+      frm := TFormatSettings.Create;
+      frm.DateSeparator :=#0;
+      frm.ShortDateFormat := 'YYYYMMDD';
+      Result := DateToStr(FDateValue, frm);
+  end;
 end;
 
 procedure TDateTimeStringType.SetValueStr(const s: String);
 var
   wYear, wMonth, wDay: Word;
 begin
-  wYear := StrToInt(Copy(s, 1, 4));
-  wMonth := StrToInt(Copy(s, 5, 2));
-  wDay := StrToInt(Copy(s, 7, 2));
-  FDateValue := EncodeDate(wYear, wMonth, wDay);
+  if s='' then FDateValue := 0 else
+  begin
+      wYear := StrToInt(Copy(s, 1, 4));
+      wMonth := StrToInt(Copy(s, 5, 2));
+      wDay := StrToInt(Copy(s, 7, 2));
+      FDateValue := EncodeDate(wYear, wMonth, wDay);
+  end;
 end;
 
 { TWPXSequenceStringsURN }
@@ -3091,7 +3139,8 @@ begin
   begin
     AName := 'schemeID';
     if fschemeID=TTaxID.FC_tax_number then
-      AValue := 'FC' else AValue := 'VA';
+         AValue := 'FC'   // 5.1.2024
+    else AValue := 'VA';
     Result := true;
   end
   else
@@ -3146,6 +3195,35 @@ function TAmountListType.get_ListItem(index: Integer): TAmountListType;
 begin
   Result := ListItemBase(index) as TAmountListType;
 end;
+
+{ TSumRecList }
+
+procedure TSumRecList.AddToList( aVATCategory : TTaxCategory;
+                     aVATRate, aNetValue, aVATvalue, aGrossValue : Double );
+    var r : TSumRec;
+        j : Integer;
+    begin
+          for j := 0 to Count-1 do
+          begin
+            if SameValue(list[j].VATRate,aVATRate) and
+               (list[j].VATCategory=aVATCategory)
+            then
+            begin
+               r := list[j];
+               r.netValue := r.netValue + aNetValue;
+               r.grossValue := r.grossValue + aGrossValue;
+               r.VATvalue := r.VATvalue + aVATvalue;
+               list[j] := r;
+               exit;
+            end;
+          end;
+          r.netValue   := aNetValue;
+          r.grossValue := aGrossValue;
+          r.VATRate    := aVATRate;
+          r.VATvalue   := aVATvalue;
+          r.VATCategory := aVATCategory;
+          Add(r);
+    end;
 
 
 

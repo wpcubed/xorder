@@ -33,8 +33,6 @@ uses System.SysUtils, System.Rtti, System.TypInfo, System.IOUtils, System.Math,
   System.StrUtils, System.Types, System.Classes, System.Generics.Collections,
   WPXFacturTransaction, WPXFacturTypes, WPXFacturEN16931;
 
-
-
 type
   TCompanyData = class
   private
@@ -47,6 +45,10 @@ type
       Addres : String; // Addres LineOne
       CityName : String;
       CountryID : TCountryID;
+
+      email : String;
+      telephone : String;
+      fax : String;
       // Optional
       DepartmentName : String;
       // Required for Seller
@@ -784,18 +786,21 @@ procedure TCompanyData.Assign(const Source: TCompanyData);
 begin
   if Source=nil then  Clear else
   begin
-      Name := Source.Name  ;
+      Name := Source.Name;
       DepartmentName := Source.DepartmentName;
-      PostcodeCode := Source.PostcodeCode  ;
-      Addres   := Source.Addres  ;
-      CityName := Source.CityName  ;
-      CountryID := Source.CountryID  ;
-      TAXId := Source.TAXId  ;
-      VATID := Source.VATID  ;
-      ContactInfo := Source.ContactInfo  ;
-      ID := Source.ID  ;
-      GlobalID := Source.GlobalID  ;
-      GlobalIDScheme := Source.GlobalIDScheme  ;
+      PostcodeCode := Source.PostcodeCode;
+      Addres   := Source.Addres;
+      CityName := Source.CityName;
+      CountryID := Source.CountryID;
+      TAXId := Source.TAXId;
+      VATID := Source.VATID;
+      ContactInfo := Source.ContactInfo;
+      ID := Source.ID;
+      GlobalID := Source.GlobalID;
+      GlobalIDScheme := Source.GlobalIDScheme;
+      email  := Source.email;
+      telephone  := Source.telephone;
+      fax := Source.fax;
   end;
 end;
 
@@ -806,7 +811,13 @@ begin
   begin
     Dest.SaveElementsInSchemeOrder := true; // the validator depends on this!
     Dest.Name.SetValue(Name);
-    if DepartmentName<>'' then Dest.DefinedTradeContact.DepartmentName.SetValue(DepartmentName);
+    if DepartmentName<>'' then
+         Dest.DefinedTradeContact.DepartmentName.SetValue(DepartmentName);
+
+    if email<>'' then Dest.DefinedTradeContact.EmailURIUniversalCommunication.SetValue(email);
+    if telephone<>'' then Dest.DefinedTradeContact.TelephoneUniversalCommunication.SetValue(telephone);
+    if fax<>'' then Dest.DefinedTradeContact.FaxUniversalCommunication.SetValue(fax);
+
     Dest.PostalTradeAddress.PostcodeCode.SetValue(PostcodeCode);
     Dest.PostalTradeAddress.LineOne.SetValue(Addres);
     Dest.PostalTradeAddress.CityName.SetValue(CityName);
@@ -836,6 +847,19 @@ begin
     if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
             Integer(TXTradeContact.DepartmentName)], val) then
          DepartmentName := val.ValueStr else DepartmentName := '';
+
+    if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
+            Integer(TXTradeContact.EmailURIUniversalCommunication)], val) then
+         email := val.ValueStr else email := '';
+
+    if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
+            Integer(TXTradeContact.TelephoneUniversalCommunication)], val) then
+         telephone := val.ValueStr else telephone := '';
+
+    if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
+            Integer(TXTradeContact.FaxUniversalCommunication)], val) then
+         fax := val.ValueStr else fax := '';
+
     // This code first checks the property exists and then read the values
     Source.ReadElementValue([Integer(TXTradeParty.PostalTradeAddress),
             Integer(TXTradeAddress.PostcodeCode)], PostcodeCode);
@@ -873,6 +897,9 @@ begin
       ID  := '';
       GlobalID := '';
       GlobalIDScheme  := '';
+      email  := '';
+      telephone  := '';
+      fax := '';
    end;
 end;
 
