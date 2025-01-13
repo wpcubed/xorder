@@ -814,9 +814,9 @@ begin
     if DepartmentName<>'' then
          Dest.DefinedTradeContact.DepartmentName.SetValue(DepartmentName);
 
-    if email<>'' then Dest.DefinedTradeContact.EmailURIUniversalCommunication.SetValue(email);
-    if telephone<>'' then Dest.DefinedTradeContact.TelephoneUniversalCommunication.SetValue(telephone);
-    if fax<>'' then Dest.DefinedTradeContact.FaxUniversalCommunication.SetValue(fax);
+    if email<>'' then Dest.DefinedTradeContact.EmailURIUniversalCommunication.URIID.SetValue(email);
+    if telephone<>'' then Dest.DefinedTradeContact.TelephoneUniversalCommunication.CompleteNumber.SetValue(telephone);
+    if fax<>'' then Dest.DefinedTradeContact.FaxUniversalCommunication.CompleteNumber.SetValue(fax);
 
     Dest.PostalTradeAddress.PostcodeCode.SetValue(PostcodeCode);
     Dest.PostalTradeAddress.LineOne.SetValue(Addres);
@@ -850,15 +850,15 @@ begin
 
     if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
             Integer(TXTradeContact.EmailURIUniversalCommunication)], val) then
-         email := val.ValueStr else email := '';
+         email := TUniversalCommunication(val).URIID.ValueStr else email := '';
 
     if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
             Integer(TXTradeContact.TelephoneUniversalCommunication)], val) then
-         telephone := val.ValueStr else telephone := '';
+         telephone := TUniversalCommunication(val).CompleteNumber.ValueStr else telephone := '';
 
     if Source.ReadElementValue([Integer(TXTradeParty.DefinedTradeContact),
             Integer(TXTradeContact.FaxUniversalCommunication)], val) then
-         fax := val.ValueStr else fax := '';
+         fax := TUniversalCommunication(val).CompleteNumber.ValueStr else fax := '';
 
     // This code first checks the property exists and then read the values
     Source.ReadElementValue([Integer(TXTradeParty.PostalTradeAddress),
