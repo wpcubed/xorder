@@ -1,13 +1,13 @@
  
   WPXOrder by WPCubed
 
-  Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2026 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
-Please note that we cannot guarantee the correctness for the created Format 
-or the calculation since also we have to depend on Information which 
-is given to us without any guarantee for correctness and is also changed 
-quite often.
+  Please note that we cannot guarantee the correctness for the created Format 
+  or the calculation since also we have to depend on Information which 
+  is given to us without any guarantee for correctness and is also changed 
+  quite often.
 
 
   The project WPXOrder with the X-Factur specification and is aimed at reading
@@ -28,8 +28,8 @@ quite often.
   (Your software must also be distributed under GNU License!)
 
   2. **Commercial License**: For those who prefer to use "WPXOrder" without the
-  restrictions imposed by the GPL, a commercial license is available.
-  Please contact WPCubed GmbH - support@wptools.de for terms and pricing.
+  restrictions imposed by the GPL, please buy any of our products WPTools, wPDF,
+  WPViewPDF or fotoarray.
 
   --------------------------------
   The code was created with the Information provided here
