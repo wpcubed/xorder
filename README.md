@@ -79,8 +79,8 @@ end;
 <p><b>Not allowed is the use in components of any kind or forks of this component.</b></p>
 <p class="emptypar">&nbsp;</p>
 <h2>2. Commercial License:</h2>
-<p>For those who prefer to use &#34;WPXOrder&#34; without the restrictions imposed by the GPL, a commercial license is available. </p>
-<p>Please contact WPCubed GmbH - support@wptools.de for terms and pricing.</p>
+<p>For those who prefer to use &#34;WPXOrder&#34; without the restrictions imposed by the GPL, a commercial license is available with any of our products WPTools, wPDF, WPViewPDF and fotoarray (www.fotoarray.com)</p>
+<p>  </p>
 <p class="emptypar">&nbsp;</p>
 <h1>Usage Disclaimer</h1>
 <p>The code was created with the Information provided here</p>
