@@ -3,7 +3,7 @@ unit WPXFactur;
 { WPXOrder by WPCubed
   https://github.com/wpcubed/xorder
   https://www.wpcubed.com/xorder
-  Copyright (C) 2024 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2026 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   The project WPXOrder with the X-Factur specification and is aimed at reading
@@ -16,6 +16,8 @@ unit WPXFactur;
   Please use at your own risk since we found out, that the
   provided examples ado not produce results wich are consistent with this calulation.
   Please report errors you find!
+
+  Please note that is handles shipping costs as gross=net (brutto=netto)
   **********************************************
 
   The code was created with the Information provided here
@@ -61,6 +63,9 @@ type
       ID, GlobalID, GlobalIDScheme : String;
       // Optional, Reg Nr
       SpecifiedLegalOrganization : String;
+
+      // Used for Settlement
+      IBAN : String;
 
       // Resets this record
       procedure Clear;
@@ -227,6 +232,11 @@ implementation
 
 resourcestring
     wpx_tax_no_vat = 'Kein Ausweis der Umsatzsteuer bei innergemeinschaftlichen Lieferungen';
+    // JZ 25.11.2026 exemption reasons for the other 0% categories (BR-AE-10, BR-E-10, BR-G-10, BR-O-10)
+    wpx_tax_reverse_charge = 'Steuerschuldnerschaft des Leistungsempf'#$E4'ngers';
+    wpx_tax_exempt = 'Steuerbefreit';
+    wpx_tax_export = 'Steuerfreie Ausfuhrlieferung';
+    wpx_tax_outside_scope = 'Nicht steuerbar';
 
 procedure Register;
 begin
@@ -256,23 +266,27 @@ begin
 end;
 
 function TWPXFactur.ReadCompanyData( data : TCompanyData; Sel : TReadCompanyDataMode ) : Boolean;
+var party : TTradeParty;
 begin
+   // JZ 25.11.2026 Result was not assigned; Payee read the buyer and ShipTo read the payee
+   party := nil;
    case Sel of
       TReadCompanyDataMode.Seller :
          if Transaction.ApplicableHeaderTradeAgreement.Has(TXHeaderTradeAgreement.SellerTradeParty) then
-             data.AssignFrom( Transaction.ApplicableHeaderTradeAgreement.SellerTradeParty ) else data.Clear;
+             party := Transaction.ApplicableHeaderTradeAgreement.SellerTradeParty;
       TReadCompanyDataMode.Buyer:
          if Transaction.ApplicableHeaderTradeAgreement.Has(TXHeaderTradeAgreement.BuyerTradeParty) then
-             data.AssignFrom( Transaction.ApplicableHeaderTradeAgreement.BuyerTradeParty ) else data.Clear;
+             party := Transaction.ApplicableHeaderTradeAgreement.BuyerTradeParty;
       TReadCompanyDataMode.Payee:
-         if Transaction.ApplicableHeaderTradeAgreement.Has(TXHeaderTradeAgreement.BuyerTradeParty) then
-             data.AssignFrom( Transaction.ApplicableHeaderTradeAgreement.BuyerTradeParty ) else data.Clear;
-      TReadCompanyDataMode.ShipTo:
          if Transaction.ApplicableHeaderTradeSettlement.Has(TXHeaderTradeSettlement.PayeeTradeParty) then
-             data.AssignFrom( Transaction.ApplicableHeaderTradeSettlement.PayeeTradeParty ) else data.Clear;
+             party := Transaction.ApplicableHeaderTradeSettlement.PayeeTradeParty;
+      TReadCompanyDataMode.ShipTo:
+         if Transaction.ApplicableHeaderTradeDelivery.Has(TXHeaderTradeDelivery.ShipToTradeParty) then
+             party := Transaction.ApplicableHeaderTradeDelivery.ShipToTradeParty;
    end;
+   Result := party<>nil;
+   if Result then data.AssignFrom( party ) else data.Clear;
 end;
-
 procedure TWPXFactur.StartInvoice(
   DocumentCode : TDocumentCode;
   IssueDate: TDateTime;
@@ -289,11 +303,11 @@ procedure TWPXFactur.StartInvoice(
   var i : Integer;
   begin
      i := Pos('=',sIn);
-     if (i<2) or (i>7) then // 2 * 3 letter codes
+     if (i<2) or (i>8) then // 2 * 3 letter codes + comma  // JZ 25.11.2026 was i>7, "EEV,AAJ=" has '=' at 8
      begin
          Result := sIn;
          sSubjectCode := '';
-         sSubjectCode := '';
+         sContentCode := ''; // JZ 25.11.2026 was not reset, the code of the previous note was used
          if i=1 then Delete(Result,1,1);
      end else
      begin
@@ -303,7 +317,7 @@ procedure TWPXFactur.StartInvoice(
         if i>0 then
         begin
            sSubjectCode := Copy(sContentCode,i+1,3);
-           Delete(sContentCode,1, i);
+           SetLength(sContentCode, i-1); // JZ 25.11.2026 keep the part before the comma, not the subject code
         end else sSubjectCode := '';
      end;
   end;
@@ -324,6 +338,10 @@ begin
       GuidelineSpecifiedDocumentContextParameter.ID.ValueStr :=
           WPXGuideLineDef[ SelectedProfile ];
   end;
+  // JZ 25.11.2026 XMP ConformanceLevel must match the guideline in the XML
+  if SelectedProfile=TWPXOrderProfile.Basic then
+       pdfa_xfactur_LEVEL := 'BASIC'
+  else pdfa_xfactur_LEVEL := 'EXTENDED';
 
   // -- Fill the document info --
   // the cast() is not necessary of course, but
@@ -347,8 +365,9 @@ begin
             with IncludedNote.ListIsFirstOrAdd as TNote do
             begin
                 Content.SetValue(SplitNoteString(s,sContentCode, sSubjectCode));
-                ContentCode.SetValue(sContentCode);
-                SubjectCode.SetValue(sSubjectCode);
+                // JZ 25.11.2026 do not create empty code elements
+                if sContentCode<>'' then ContentCode.SetValue(sContentCode);
+                if sSubjectCode<>'' then SubjectCode.SetValue(sSubjectCode);
             end;
          end;
       end;
@@ -360,6 +379,7 @@ begin
         Content.SetValue(Seller.ContactInfo);
         SubjectCode.SetValue('REG');
       end;
+
   end;
 
 
@@ -406,7 +426,17 @@ begin
      Transaction.ApplicableHeaderTradeSettlement.InvoiceCurrencyCode.SetValue( TCurrencyCode.EUR );
    //  Buyer.AssignTo(InvoiceeTradeParty);
 
-     Buyer.AssignTo( PayeeTradeParty );
+   // If we have an IBAN - add it   - 10.10.2025
+      if Seller.IBAN<>'' then
+      begin
+         SpecifiedTradeSettlementPaymentMeans.TypeCode.ValueStr := '58';
+         SpecifiedTradeSettlementPaymentMeans.PayeePartyCreditorFinancialAccount.IBANID.ValueStr :=
+             StringReplace( Seller.IBAN,#32,'', [rfReplaceAll] );
+      end;
+
+
+     // JZ 25.11.2026 removed: Buyer.AssignTo( PayeeTradeParty ) - the buyer is not the payee (BG-10).
+     // A payee is only needed if it differs from the seller.
      // ApplicableTradeTax and SpecifiedTradeAllowanceCharge are
      // added in FinalizeInvoice
   end;
@@ -427,7 +457,7 @@ begin
   Result := Transaction.Items.Add;
   with Result.Line do
   begin
-      AssociatedDocumentLineDocument.LineID.SetValue(1);
+      AssociatedDocumentLineDocument.LineID.SetValue(Self.Transaction.Items.Count); // JZ 25.11.2026 was always 1
       SpecifiedTradeProduct.Name.SetValue(ProductName);
       // The price of an item, exclusive of VAT, after subtracting any item price discount.
       SpecifiedLineTradeAgreement.NetPriceProductTradePrice.ChargeAmount.SetValue(SinglePriceNET);
@@ -470,6 +500,9 @@ begin
 end;
 
 // Logistic Costs
+// JZ 25.11.2026 AppliedAmount is written as Value + VAT. This was checked against the
+// official examples; the specification is ambiguous here (gross/net). CalcSummation
+// interprets the value according to TWPXOrderCalcMode.SpecifiedLogisticsNettoMode.
 function TWPXFactur.AddLogisticsServiceCharge(const Description: String;
   const Value, VATRate: Double;
   const VATCategory: TTaxCategory): TLogisticsServiceCharge;
@@ -529,7 +562,7 @@ var i : Integer;
     tax : TTradeTax;
     LineitemTotal, ChargesTotal, AllowanceTotal : Double;
     grossLineitemTotal, grossChargesTotal, grossAllowanceTotal : Double;
-    vattotal, grossGrandtotal, netGrandtotal : Double;
+    vattotal, grossGrandtotal, netGrandtotal, taxAmount : Double;
     // conversionrate : Double;
     // r.gross value is used for the allowance/Charge!
     summationApplicableTradeTax : TSumRecList;
@@ -572,7 +605,7 @@ begin
                 CalculatedAmount.Value := r.VATvalue;
                 TypeCode.SetValue('VAT');
                 BasisAmount.Value := r.netValue;
-                RateApplicablePercent.Value := r.netValue;
+                RateApplicablePercent.Value := r.VATRate; // JZ 25.11.2026 was r.netValue
                 CategoryCode.value := r.VATCategory;
                 tax := nil;
            end;
@@ -668,12 +701,21 @@ begin
                 if (PaymentData.PaymentDiscountTermsDays>0) and
                     not SameValue(PaymentData.PaymentDiscountTermsPercent,0) then
                 begin
-                    SpecifiedTradePaymentTerms.Description.ValueStr := PaymentData.PaymentDiscountTermsDescription;
+                    // JZ 25.11.2026 append the discount text, do not overwrite the payment terms
+                    if PaymentData.PaymentDiscountTermsDescription<>'' then
+                    begin
+                       if PaymentData.PaymentTerms<>'' then
+                            SpecifiedTradePaymentTerms.Description.ValueStr :=
+                               PaymentData.PaymentTerms + #10 + PaymentData.PaymentDiscountTermsDescription
+                       else SpecifiedTradePaymentTerms.Description.ValueStr := PaymentData.PaymentDiscountTermsDescription;
+                    end;
+                    // JZ 25.11.2026 discount period is PaymentDiscountTermsDays (was PaymentData.Days)
                     SpecifiedTradePaymentTerms.ApplicableTradePaymentDiscountTerms.BasisPeriodMeasure.SetValue(
-                        IntToStr(PaymentData.Days),{unitCode=}'DAY');
+                        IntToStr(PaymentData.PaymentDiscountTermsDays),{unitCode=}'DAY');
                     SpecifiedTradePaymentTerms.ApplicableTradePaymentDiscountTerms.CalculationPercent.SetValue(
                         PaymentData.PaymentDiscountTermsPercent);
                 end;
+
              end;
         end;
 
@@ -682,25 +724,34 @@ begin
         if not FInVerifySummation then
         Transaction.ApplicableHeaderTradeSettlement.ApplicableTradeTax.Clear;
 
-        if not (TWPXOrderCalcMode.VATAddRoundedOnLine in Transaction.CalcModes) then
-        begin
-           grossChargesTotal := 0;
-           grossLineitemTotal := 0;
-           grossAllowanceTotal := 0;
-           grossGrandtotal := 0;
-        end;
-
-
         for i:=0 to summationApplicableTradeTax.Count -1 do
         begin
             r := summationApplicableTradeTax[i];
+            // JZ 25.11.2026 the VAT of a category is calculated once from its basis (BR-CO-17)
+            // and exactly this value is added to TaxTotalAmount (BR-CO-14)
+            if (TWPXOrderCalcMode.VATAddRoundedOnLine in Transaction.CalcModes) then
+                 taxAmount := r.VATvalue
+            else taxAmount := WPXCurrencyRound((r.netValue + r.grossValue)/100*r.VATRate);
+            vattotal := vattotal + taxAmount;
+
             if not FInVerifySummation then
             with TTradeTax(Transaction.ApplicableHeaderTradeSettlement.ApplicableTradeTax.ListIsFirstOrAdd) do
             begin
-               CalculatedAmount.Value :=  r.VATvalue;
+               CalculatedAmount.Value :=  taxAmount;
                TypeCode.ValueStr := 'VAT';
-               if r.VATCategory=TTaxCategory.K_VAT_exempt_for_EEA then
-                   ExemptionReason.ValueStr := wpx_tax_no_vat;
+               // JZ 25.11.2026 exemption reason also for AE, E, G and O
+               case r.VATCategory of
+                  TTaxCategory.K_VAT_exempt_for_EEA :
+                       ExemptionReason.ValueStr := wpx_tax_no_vat;
+                  TTaxCategory.AE_VAT_Reverse_Charge :
+                       ExemptionReason.ValueStr := wpx_tax_reverse_charge;
+                  TTaxCategory.E_Exempt_from_tax :
+                       ExemptionReason.ValueStr := wpx_tax_exempt;
+                  TTaxCategory.G_Free_export_item_tax_not_charged :
+                       ExemptionReason.ValueStr := wpx_tax_export;
+                  TTaxCategory.O_Services_outside_scope_of_tax :
+                       ExemptionReason.ValueStr := wpx_tax_outside_scope;
+               end;
                // We use "gross" for allowances and charges
                BasisAmount.Value := r.netValue+r.grossValue;
                // VAT all Items
@@ -710,22 +761,13 @@ begin
                CategoryCode.Value := r.VATCategory;
                RateApplicablePercent.Value := r.VATRate;
             end;
-
-            // For use in  SpecifiedTradeSettlementHeaderMonetarySummation
-            if (TWPXOrderCalcMode.VATAddRoundedOnLine in Transaction.CalcModes) then
-                vattotal := vattotal + r.VATvalue
-            else
-            begin
-               // This is the default behaviour. Note that we minimize rounding errors since
-               // we add all values which belong to a certain VAT-RATE and calculate the VAT and the gross value
-               // based on that sum.
-               grossChargesTotal := grossChargesTotal + WPXCurrencyRound(r.grossValue/100*(100+r.VATRate));
-               grossLineitemTotal:= grossLineitemTotal + WPXCurrencyRound(r.netValue/100*(100+r.VATRate));
-               grossGrandtotal := grossGrandtotal + WPXCurrencyRound((r.netValue+ r.grossValue)/100*(100+r.VATRate));
-               vattotal := vattotal + WPXCurrencyRound((r.grossValue + r.netValue)/100*r.VATRate );
-            end;
         end;
 
+        // JZ 25.11.2026 GrandTotalAmount = TaxBasisTotalAmount + TaxTotalAmount (BR-CO-15).
+        // Before, the gross values were rounded per category and could differ by a cent.
+        netGrandtotal   := WPXCurrencyRound(netGrandtotal);
+        vattotal        := WPXCurrencyRound(vattotal);
+        grossGrandtotal := WPXCurrencyRound(netGrandtotal + vattotal);
       (*  if  Transaction.ApplicableHeaderTradeSettlement.Has( TXHeaderTradeSettlement.TaxApplicableTradeCurrencyExchange) and
             Transaction.ApplicableHeaderTradeSettlement.TaxApplicableTradeCurrencyExchange.Has( TXTradeCurrencyExchange.ConversionRate ) then
         begin
@@ -750,7 +792,7 @@ begin
             fMessages.Add(Format('GrandTotalAmount: %f / %f [%s]',[grossGrandtotal,GrandTotalAmount.Value,currency]));
             if not SameValue(PrepaidAmount,0) then
             fMessages.Add(Format('PrepaidAmount: %f / %f [%s]',[PrepaidAmount,PrepaidAmount,currency]));
-            fMessages.Add(Format('DuePayableAmount: %f / %f [%s]',[(grossLineitemTotal+grossAllowanceTotal+grossChargesTotal-PrepaidAmount),
+            fMessages.Add(Format('DuePayableAmount: %f / %f [%s]',[(grossGrandtotal-PrepaidAmount),
                DuePayableAmount.Value,currency]));
         end
         else
@@ -762,16 +804,16 @@ begin
             AllowanceTotalAmount.Value:= -allowanceTotal; // = negative value!
             TaxBasisTotalAmount.Value := netGrandtotal;
             TaxTotalAmount.SetValue( vattotal , InvoiceCurrencyCode);
-            GrandTotalAmount.Value    := grossLineitemTotal+grossAllowanceTotal+grossChargesTotal;
+            GrandTotalAmount.Value    := grossGrandtotal; // JZ 25.11.2026 see BR-CO-15 above
             TotalPrepaidAmount.Value  := PrepaidAmount;
-            DuePayableAmount.Value    := (grossLineitemTotal+grossAllowanceTotal+grossChargesTotal-PrepaidAmount);
+            DuePayableAmount.Value    := WPXCurrencyRound(grossGrandtotal-PrepaidAmount);
             fMessages.Add(Format('LineTotalAmount: %f %s',[LineitemTotal,currency]));
             fMessages.Add(Format('ChargeTotalAmount: %f %s',[ChargesTotal,currency]));
             fMessages.Add(Format('AllowanceTotalAmount: %f %s',[-allowanceTotal,currency]));
             fMessages.Add(Format('TaxBasisTotalAmount: %f %s',[netGrandtotal,currency]));
             fMessages.Add(Format('TaxTotalAmount: %f %s',[vattotal,currency]));
             fMessages.Add(Format('GrandTotalAmount: %f %s',[grossGrandtotal,currency]));
-            fMessages.Add(Format('DuePayableAmount: %f %s',[grossLineitemTotal+grossAllowanceTotal+grossChargesTotal-PrepaidAmount,currency]));
+            fMessages.Add(Format('DuePayableAmount: %f %s',[grossGrandtotal-PrepaidAmount,currency]));
         end;
       end;
       Result := Transaction.ApplicableHeaderTradeSettlement.SpecifiedTradeSettlementHeaderMonetarySummation;
@@ -801,11 +843,15 @@ begin
       email  := Source.email;
       telephone  := Source.telephone;
       fax := Source.fax;
+      // JZ 25.11.2026 these two were not copied
+      SpecifiedLegalOrganization := Source.SpecifiedLegalOrganization;
+      IBAN := Source.IBAN;
   end;
 end;
 
 // Assign Info in TCompanyData to TTradeParty Object
 procedure TCompanyData.AssignTo(Dest: TTradeParty);
+var i : Integer;
 begin
   if Self<>nil then
   begin
@@ -826,18 +872,29 @@ begin
     if ID<>'' then Dest.ID.ValueStr := ID;
     if GlobalID<>'' then Dest.GlobalID.SetValue(GlobalID,GlobalIDScheme);
 
-    if VATID<>'' then Dest.SpecifiedTaxRegistration.ID.SetValue(VATID,TTaxID.VA_VAT_number);
+    i := 1;
+    if VATID<>'' then
+    begin
+       Dest.SpecifiedTaxRegistration[i].ID.SetValue(VATID,TTaxID.VA_VAT_number);
+       inc(i);
+    end;
+    if TAXId<>'' then
+    begin
+       Dest.SpecifiedTaxRegistration[i].ID.SetValue(TAXId,TTaxID.FC_tax_number);
+       //inc(i);
+    end;
 
     if SpecifiedLegalOrganization<>'' then
     begin
-      Dest.SpecifiedLegalOrganization.ID.SetValue(
-          SpecifiedLegalOrganization, {schemeID=}'0002' );
+      // JZ 25.11.2026 no schemeID - '0002' is the French SIRENE register
+      Dest.SpecifiedLegalOrganization.ID.SetValue( SpecifiedLegalOrganization );
     end;
   end;
 end;
 
 procedure TCompanyData.AssignFrom(Source: TTradeParty);
 var val : TWPXElement;
+    i : Integer;
 begin
   if Source<>nil then
   begin
@@ -872,9 +929,19 @@ begin
          CountryIDText := val.ValueStr else CountryID := TCountryID.UNDEFINED;
     Source.ReadElementValue([Integer(TXTradeParty.ID)], ID);
     Source.ReadElementValue([Integer(TXTradeParty.GlobalID)], GlobalID);
-    if Source.ReadElementValue([Integer(TXTradeParty.SpecifiedTaxRegistration),
-            Integer(TXTaxRegistration.ID)], val) then
-         VATID := val.ValueStr else VATID := '';
+
+    VATID := '';
+    TAXId := '';
+    if Source.ReadElementValue([Integer(TXTradeParty.SpecifiedTaxRegistration)], val) then
+    begin
+       for i := 1 to (val as TTaxRegistration).ListCount do // JZ 25.11.2026 list index is 1-based
+       begin
+          if TTaxRegistration(val)[i].ID.schemeID=TTaxID.VA_VAT_number then
+               VATID :=  TTaxRegistration(val)[i].ID.ValueStr
+          else TAXId :=  TTaxRegistration(val)[i].ID.ValueStr;
+       end;
+    end;
+
     if Source.ReadElementValue([Integer(TXTradeParty.SpecifiedLegalOrganization),
             Integer(TXLegalOrganization.ID)], val) then
          SpecifiedLegalOrganization := val.ValueStr else SpecifiedLegalOrganization := '';
@@ -900,6 +967,8 @@ begin
       email  := '';
       telephone  := '';
       fax := '';
+      SpecifiedLegalOrganization := ''; // JZ 25.11.2026 were not cleared
+      IBAN := '';
    end;
 end;
 
@@ -923,6 +992,10 @@ begin
 end;
 
 initialization
+
+{ var pdfa_xfactur_schema : String;
+    pdfa_xfactur_info : String;
+    pdfa_xfactur_filename, pdfa_xfactur_LEVEL, pdfa_xfactur_description : String; }
 
 // Variables needed for wPDF (  https://www.wpcubed.com )  to creat a PDF file with
 // the metadata and embedded XML

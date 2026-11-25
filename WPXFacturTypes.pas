@@ -33,8 +33,10 @@ unit WPXFacturTypes;
 
 
   2. **Commercial License**: For those who prefer to use "WPXOrder" without the
-  restrictions imposed by the GPL, a commercial license is available.
-  Please contact WPCubed GmbH - support@wptools.de for terms and pricing.
+  restrictions imposed by the GPL, you can easily get a commercial license.
+
+  It is included with any of this products of WPCubed:
+  WPTools, wPDF, WPViewPDF (www.wpcubed.com), fotoARRAY (www.fotoarray.com)
 
   --------------------------------
   The code was created with the Information provided here
@@ -141,7 +143,7 @@ var WPXElementNSDefs:array[TWPXElementNS] of TWPXElementNSDef
    );
 
 const
-  wpxfCrossIndustryDocument: string = '<rdf:Description rdf :about=""' + #10 +
+  wpxfCrossIndustryDocument: string = '<rdf:Description rdf:about=""' + #10 + // JZ 25.11.2026 was "rdf :about"
     'xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">' + #10 +
     '<fx:DocumentType>INVOICE</fx:DocumentType>' + #10 +
     '<fx:DocumentFileName>factur-x.xml</fx:DocumentFileName>' + #10 +
@@ -583,7 +585,8 @@ type
   TIntegerIDType = class(TNumericType)
   public
     constructor Create; override;
-    function SetValue( intvalue : Integer; Defaults : TWPXDocDefaults  = nil ) : Boolean; overload;
+    // JZ 25.11.2026 override instead of hiding the virtual TWPXElement.SetValue (W1010)
+    function SetValue( const intvalue : Integer; Defaults : TWPXDocDefaults  = nil ) : Boolean; overload; override;
     function Get_SetValueParams( Defaults : TWPXDocDefaults ) : String; override;
   end;
 
@@ -1587,6 +1590,7 @@ begin
     begin
       O := FList[j];
       O.AsString := AValue;
+      Result := Self; // JZ 25.11.2026 Result was not assigned on this path
       exit;
     end;
   O := TSeqData.Create;
@@ -2259,6 +2263,7 @@ function TDocumentCodeType.SetValue(value: TDocumentCode;
   Defaults: TWPXDocDefaults): Boolean;
 begin
    fBaseStringValue := wpxDocumentCodeContentType[value];
+   Result := true; // JZ 25.11.2026 Result was not assigned
 end;
 
 
@@ -2808,10 +2813,11 @@ begin
    Result := IntToStr(StrToIntDef(fBaseStringValue,0));
 end;
 
-function TIntegerIDType.SetValue(intvalue: Integer;
+function TIntegerIDType.SetValue(const intvalue: Integer;
   Defaults: TWPXDocDefaults): Boolean;
 begin
   fBaseStringValue := IntToStr(intvalue);
+  Result := true; // JZ 25.11.2026 Result was not assigned
 end;
 { TQuantityType }
 

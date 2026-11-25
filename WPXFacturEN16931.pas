@@ -4,7 +4,7 @@ unit WPXFacturEN16931;
   https://www.wpcubed.com/xorder
   ---------------------------------
 
-  Copyright (C) 2024-2025 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2026 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   To embed XML into PDF files we recommend to use the product WPViewPDF Plus.
@@ -33,8 +33,11 @@ unit WPXFacturEN16931;
 
 
   2. **Commercial License**: For those who prefer to use "WPXOrder" without the
-  restrictions imposed by the GPL, a commercial license is available.
-  Please contact WPCubed GmbH - support@wptools.de for terms and pricing.
+  restrictions imposed by the GPL, you can easily get a commercial license.
+
+  It is included with any of these products of WPCubed:
+  WPTools, wPDF, WPViewPDF (www.wpcubed.com), fotoARRAY (www.fotoarray.com)
+
 
   --------------------------------
   The code was created with the Information provided here
@@ -956,6 +959,8 @@ protected
 public
 	property DeliveryTypeCode:TDeliveryTermsCodeType read get_0;
 end;
+
+
 
 TXTradeParty = (
 	ID, // name=ID,type=udt:IDType,minOccurs=0,maxOccurs=unbounded
@@ -2207,13 +2212,15 @@ case iEnum of
 9 : begin Result := TTimeReferenceCodeType; opt:=0; end;
 10 : begin Result := TPercentType; opt:=0; end;
 end; end;
-	function TTradeTax.get_0: TAmountType;
+	function TTradeTax.get_0: TAmountType; begin Result := GetElementFor(0) as TAmountType; end;
+  // JZ 25.11.2026 the fixed value "VAT" belongs to TypeCode, not to CalculatedAmount.
+  // WasCreatedNew stays true, so every read of CalculatedAmount replaced the amount with "VAT".
+	function TTradeTax.get_1: TTaxTypeCodeType;
   begin
-     Result := GetElementFor(0) as TAmountType;
-     if Result.WasCreatedNew then
-        Result.ValueStr := 'VAT'; // Note: Fixed value = "VAT" , EN16931-ID: BT-95-0
+     Result := GetElementFor(1) as TTaxTypeCodeType;
+     if Result.WasCreatedNew and (Result.ValueStr='') then
+        Result.ValueStr := 'VAT'; // Note: Fixed value = "VAT" , EN16931-ID: BT-118-0
   end;
-	function TTradeTax.get_1: TTaxTypeCodeType; begin Result := GetElementFor(1) as TTaxTypeCodeType; end;
 	function TTradeTax.get_2: TTextType; begin Result := GetElementFor(2) as TTextType; end;
 	function TTradeTax.get_3: TAmountType; begin Result := GetElementFor(3) as TAmountType; end;
 	function TTradeTax.get_4: TAmountType; begin Result := GetElementFor(4) as TAmountType; end;

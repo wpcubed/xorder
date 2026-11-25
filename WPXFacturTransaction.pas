@@ -4,7 +4,7 @@
   https://www.wpcubed.com/xorder
   ---------------------------------
 
-  Copyright (C) 2024-2025 WPCubed GmbH, developed by Julian Ziersch
+  Copyright (C) 2024-2026 WPCubed GmbH, developed by Julian Ziersch
   https://www.wpcubed.com/pdf/xorder/
 
   To embed XML into PDF files we recommend to use the product WPViewPDF Plus.
@@ -31,10 +31,11 @@
   the terms of the GPL, except components or "forks".
   (Your software must also be distributed under GNU License!)
 
-
   2. **Commercial License**: For those who prefer to use "WPXOrder" without the
-  restrictions imposed by the GPL, a commercial license is available.
-  Please contact WPCubed GmbH - support@wptools.de for terms and pricing.
+  restrictions imposed by the GPL, you can easily get a commercial license.
+
+  It is included with any of this products of WPCubed:
+  WPTools, wPDF, WPViewPDF (www.wpcubed.com), fotoARRAY (www.fotoarray.com)
 
   --------------------------------
   The code was created with the Information provided here
@@ -217,12 +218,13 @@ procedure TSupplyChainTradeTransaction.Assign(Source: TPersistent);
 begin
   if Source is TSupplyChainTradeTransaction then
   begin
+      // JZ 25.11.2026 Delivery and Settlement were not copied (Agreement was copied 3 times)
       fApplicableHeaderTradeAgreement.Assign
         (TSupplyChainTradeTransaction(Source).ApplicableHeaderTradeAgreement);
-      fApplicableHeaderTradeAgreement.Assign
-        (TSupplyChainTradeTransaction(Source).ApplicableHeaderTradeAgreement);
-      fApplicableHeaderTradeAgreement.Assign
-        (TSupplyChainTradeTransaction(Source).ApplicableHeaderTradeAgreement);
+      fApplicableHeaderTradeDelivery.Assign
+        (TSupplyChainTradeTransaction(Source).ApplicableHeaderTradeDelivery);
+      fApplicableHeaderTradeSettlement.Assign
+        (TSupplyChainTradeTransaction(Source).ApplicableHeaderTradeSettlement);
       fItems.Assign(TSupplyChainTradeTransaction(Source).Items);
   end else inherited;
 end;
@@ -349,19 +351,27 @@ begin
   // By default we calculate the VAT based on the sum of all Items
   if not (TWPXOrderCalcMode.VATAddRoundedOnLine in CalcModes) then
   begin
-     for I := 1 to fMonetarySummation.Count-1 do
+     // JZ 25.11.2026 the lists are 0-based, the first entry was skipped; allowances were missing
+     for I := 0 to fMonetarySummation.Count-1 do
      begin
        r :=  fMonetarySummation[i];
        r.VATvalue := WPXCurrencyRound(r.netValue/100*r.VATRate);
        r.grossValue := r.netValue + r.VATvalue;
        fMonetarySummation[i] := r;
      end;
-     for I := 1 to fChargesSummation.Count-1 do
+     for I := 0 to fChargesSummation.Count-1 do
      begin
        r :=  fChargesSummation[i];
        r.VATvalue := WPXCurrencyRound(r.netValue/100*r.VATRate);
        r.grossValue := r.netValue + r.VATvalue;
        fChargesSummation[i] := r;
+     end;
+     for I := 0 to fAllowanceSummation.Count-1 do
+     begin
+       r :=  fAllowanceSummation[i];
+       r.VATvalue := WPXCurrencyRound(r.netValue/100*r.VATRate);
+       r.grossValue := r.netValue + r.VATvalue;
+       fAllowanceSummation[i] := r;
      end;
   end;
 
